@@ -114,6 +114,23 @@
     <!-- Medios de pago (se llenan solos desde la hoja "Config") -->
     <section class="container text-center mt-4" id="medios-pago"></section>
 
+    <!-- Destacados aleatorios: rotan entre todos los productos activos cada vez que se renderizan -->
+    <section class="container py-5 seccion-destacados">
+        <div class="d-flex flex-wrap align-items-end justify-content-between mb-4 gap-3">
+            <div>
+                <p class="destacados-eyebrow mb-1"><i class="bi bi-stars"></i> Selección especial</p>
+                <h2 class="mb-1">Destacados para vos</h2>
+                <p class="text-muted mb-0">Los productos favoritos de nuestra comunidad, elegidos para tu rutina.</p>
+            </div>
+            <button type="button" class="btn-reroll" id="btnRerollDestacados">
+                <i class="bi bi-arrow-repeat"></i> Ver otra selección
+            </button>
+        </div>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4" id="contenedor-destacados">
+            <!-- Cards generadas por JS con renderizarDestacados() -->
+        </div>
+    </section>
+
     <section class="container mt-4">
 
         <div class="row g-2">
@@ -280,7 +297,7 @@
     </button>
 
     <!-- Tus scripts -->
-    <script src="js/script.js?v=5"></script>
+    <script src="js/script.js?v=6"></script>
    
 
 </body>

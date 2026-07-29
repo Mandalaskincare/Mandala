@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", init);
 const SPREADSHEET_ID = "1wjad7AZpvZQPueGCmnb8qg6zSFxjLMIR21V4r2ZxK0I";
 const NUMERO_WHATSAPP_DEFAULT = "5491100000000";
 const PRODUCTOS_POR_PAGINA = 6;
+const CANTIDAD_DESTACADOS = 4; // cuántas cards se muestran en "Destacados para vos"
 
 /* =========================================================
    2) ESTADO GLOBALES
@@ -99,6 +100,7 @@ productosData.forEach((p, i) => {
     renderizarMediosDePago();
     configurarEventos();
     renderizar();
+    renderizarDestacados();
     configurarEventosBuscadorAvanzado();
 }
 
@@ -422,6 +424,95 @@ function crearCardHTML(producto) {
 }
 
 /* =========================================================
+   6.1) DESTACADOS ALEATORIOS — rotación entre todos los productos activos
+   ========================================================= */
+function elegirDestacadosAleatorios(cantidad) {
+    const activos = productosData.filter(estaActivo);
+    const marcadosDestacados = activos.filter(p => esVerdadero(p.destacado));
+    const resto = activos.filter(p => !esVerdadero(p.destacado));
+
+    // 1) Primero entran los que vos marcaste como destacado=TRUE en la planilla (orden aleatorio entre ellos)
+    const destacadosBarajados = [...marcadosDestacados].sort(() => Math.random() - 0.5);
+
+    // 2) Si no alcanzan para llenar los espacios de la sección, se completa con el resto de productos activos
+    const restoBarajado = [...resto].sort(() => Math.random() - 0.5);
+
+    return [...destacadosBarajados, ...restoBarajado].slice(0, cantidad);
+}
+
+// Card "premium" pensada solo para la vidriera de Destacados (más visual que la card estándar)
+function crearCardDestacadoHTML(producto, indice) {
+    const precioOriginal = limpiarPrecio(producto.precio);
+    const final = precioFinal(producto);
+    const tieneDescuento = final < precioOriginal;
+    const esDestacado = esVerdadero(producto.destacado); // solo TRUE si vos lo marcaste así en la planilla
+
+    const stockDefinido = producto.stock !== undefined && producto.stock !== "";
+    const stockNumero = stockDefinido ? Number(producto.stock) : null;
+    const sinStock = stockDefinido && stockNumero <= 0;
+    const stockBajo = stockDefinido && stockNumero > 0 && stockNumero <= 5;
+
+    return `
+    <div class="col producto-destacado-col" style="--retraso-aparicion: ${indice * 90}ms;">
+        <div class="card-destacado h-100 card-clickeable" role="button">
+            ${esDestacado ? `<span class="destacado-cinta"><i class="bi bi-stars"></i> Destacado</span>` : ""}
+            ${tieneDescuento ? `<span class="destacado-badge-descuento">-${String(producto.descuento).replace(/%/g, "").trim()}%</span>` : ""}
+
+            <div class="destacado-img-wrap">
+                <img src="${producto.imagen || 'https://placehold.co/400x300/DDE7D4/3E4A3C?text=Producto'}" class="destacado-img img-normal" alt="${producto.nombre || 'Producto Mandala'}" loading="lazy">
+                ${producto.imagenHover ? `<img src="${producto.imagenHover}" class="destacado-img img-hover" alt="${producto.nombre || 'Producto Mandala'} - vista adicional" loading="lazy">` : ""}
+            </div>
+
+            <div class="destacado-body">
+                ${producto.marca ? `<p class="destacado-marca">${producto.marca}</p>` : ""}
+                <h5 class="destacado-nombre">${producto.nombre || ""}</h5>
+                ${producto.descripcionCorta ? `<p class="destacado-desc">${producto.descripcionCorta}</p>` : ""}
+                ${stockBajo ? `<p class="aviso-stock">¡Últimas ${stockNumero} unidades!</p>` : ""}
+
+                <div class="destacado-precio-wrap">
+                    ${tieneDescuento ? `<span class="precio-anterior">${formatearPrecio(precioOriginal)}</span>` : ""}
+                    <span class="destacado-precio">${formatearPrecio(final)}</span>
+                </div>
+
+                <button class="btn-mandala w-100 btn-comprar" data-nombre="${producto.nombre || ""}" data-precio="${final}" ${sinStock ? "disabled" : ""}>
+                    ${sinStock ? "Sin stock" : `<i class="bi bi-bag-plus"></i> Agregar al carrito`}
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderizarDestacados() {
+    const contenedorDestacados = document.getElementById("contenedor-destacados");
+    if (!contenedorDestacados) return; // esta sección no existe en todas las páginas
+
+    const seleccion = elegirDestacadosAleatorios(CANTIDAD_DESTACADOS);
+
+    contenedorDestacados.innerHTML = seleccion.length
+        ? seleccion.map((producto, i) => crearCardDestacadoHTML(producto, i)).join("")
+        : `<p class="text-center text-muted py-4 mb-0">Todavía no hay productos activos para destacar.</p>`;
+
+    // Botón "Comprar" dentro de esta sección
+    contenedorDestacados.querySelectorAll(".btn-comprar").forEach(btn => {
+        btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            carrito.push({
+                nombre: this.dataset.nombre,
+                precio: Number(this.dataset.precio)
+            });
+            actualizarCarrito();
+            mostrarToast();
+        });
+    });
+
+    // Click en la card para abrir el modal con el detalle
+    const cards = contenedorDestacados.querySelectorAll(".card-clickeable");
+    seleccion.forEach((producto, i) => {
+        if (cards[i]) cards[i].addEventListener("click", () => abrirModalProducto(producto));
+    });
+}
+
+/* =========================================================
    7) CATEGORÍAS DINÁMICAS
    ========================================================= */
 function poblarCategorias() {
@@ -591,6 +682,11 @@ function configurarEventos() {
         paginaActual = 1;
         renderizar();
     });
+
+    const btnRerollDestacados = document.getElementById("btnRerollDestacados");
+    if (btnRerollDestacados) {
+        btnRerollDestacados.addEventListener("click", renderizarDestacados);
+    }
 }
 
 /* =========================================================

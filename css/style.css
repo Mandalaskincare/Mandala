@@ -220,6 +220,27 @@ body {
     box-shadow:0 0 0 .2rem rgba(190,122,98,.25);
 }
 
+/* Forzar que el logo y el grupo carrito/menú queden siempre en la misma fila */
+.navbar-mandala .container{
+    flex-wrap: nowrap;
+}
+
+@media (max-width: 480px){
+    .navbar-mandala .navbar-brand img{
+        height: 48px;
+    }
+    .navbar-mandala .logo-text{
+        font-size: 1.1rem;
+        letter-spacing: 1.5px;
+    }
+    .navbar-mandala .navbar-brand{
+        min-width: 0;
+    }
+    .navbar-mandala .btn-carrito{
+        font-size: 0.9rem;
+    }
+}
+
 /* ===== BUSCADOR ===== */
 
 .buscador-wrap{
